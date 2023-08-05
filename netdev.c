@@ -2,7 +2,7 @@
 #define DEBUG 1
 */
 
-static char *version = "@(!--#) @(#) netdev.c, sversion 0.1.0, fversion 002, 03-august-2023";
+static char *version = "@(!--#) @(#) netdev.c, sversion 0.1.0, fversion 003, 05-august-2023";
 
 /*
  *  px2emul
@@ -336,6 +336,33 @@ void showfile(filename)
 
 /********************************************************************************/
 
+void define_setting(inboundip, settingpair)
+	char	*inboundip;
+	char	*settingpair;
+{
+	char	*equals;
+	char	*value;
+	int	retcode;
+
+	equals = strstr(settingpair, "=");
+
+	if (equals == NULL) {
+		writeterm("No equals sign (=) following the define keyword\n");
+	} else {
+		value = equals + 1;
+
+		*equals = '\0';
+
+		if (! definesetting(inboundip, settingpair, value)) {
+			writeterm("The define command has failed\n");
+		}
+	}
+
+	return;
+}
+
+/********************************************************************************/
+
 void show_boot(inboundip)
 	char	*inboundip;
 {
@@ -474,6 +501,8 @@ int main(argc, argv)
 
 		if (line[0] == '\0') {
 			continue;
+		} else if (strncmp(line, "define ", 7) == 0) {
+			define_setting(inboundip, line + 7);
 		} else if (strcmp(line, "show boot") == 0) {
 			show_boot(inboundip);
 		} else if (strcmp(line, "show startup-config") == 0) {
