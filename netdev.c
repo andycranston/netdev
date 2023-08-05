@@ -336,6 +336,40 @@ void showfile(filename)
 
 /********************************************************************************/
 
+void show_boot(inboundip)
+	char	*inboundip;
+{
+	char	value[MAX_SETTINGS_LINE_LENGTH];
+
+	if (! lookupsetting(inboundip, "BOOTMODE", value)) {
+		strcpy(value, "");
+	}
+
+	writeterm("Boot mode: ");
+	writeterm(value);
+	writeterm("\n");
+
+	if (! lookupsetting(inboundip, "BOOTHOST", value)) {
+		strcpy(value, "");
+	}
+
+	writeterm("Boot host: ");
+	writeterm(value);
+	writeterm("\n");
+
+	if (! lookupsetting(inboundip, "BOOTFILE", value)) {
+		strcpy(value, "");
+	}
+
+	writeterm("Boot file: ");
+	writeterm(value);
+	writeterm("\n");
+
+	return;
+}
+
+/********************************************************************************/
+
 void show_startup_config(inboundip)
 	char	*inboundip;
 {
@@ -440,6 +474,8 @@ int main(argc, argv)
 
 		if (line[0] == '\0') {
 			continue;
+		} else if (strcmp(line, "show boot") == 0) {
+			show_boot(inboundip);
 		} else if (strcmp(line, "show startup-config") == 0) {
 			show_startup_config(inboundip);
 		} else if (strcmp(line, "reboot") == 0) {
