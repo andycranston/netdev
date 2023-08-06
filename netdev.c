@@ -2,12 +2,12 @@
 #define DEBUG 1
 */
 
-static char *version = "@(!--#) @(#) netdev.c, sversion 0.1.0, fversion 003, 05-august-2023";
+static char *version = "@(!--#) @(#) netdev.c, sversion 0.1.0, fversion 004, 06-august-2023";
 
 /*
- *  px2emul
+ *  netdev
  *
- *  raritan PX2 emulator
+ *  generic network device emulator
  *
  */
 
@@ -429,6 +429,14 @@ void reboot(inboundip)
         char    configfilename[MAX_LINE_LENGTH];
         FILE    *configfile;
         char    line[MAX_LINE_LENGTH];
+	char	bootmode[MAX_SETTINGS_LINE_LENGTH];
+	char	boothost[MAX_SETTINGS_LINE_LENGTH];
+	char	bootfile[MAX_SETTINGS_LINE_LENGTH];
+        char    tftpcmdfilename[MAX_LINE_LENGTH];
+	FILE	*tftpcmdfile;
+	int	fd;
+	struct	stat stbuf;
+	char	systemcmd[MAX_LINE_LENGTH];
 
         strcpy(configfilename, "startup-config-");
         strcat(configfilename, inboundip);
@@ -437,6 +445,60 @@ void reboot(inboundip)
 	unlink(configfilename);
 
 	system("/usr/bin/sleep 3");
+
+	if (! lookupsetting(inboundip, "BOOTMODE", bootmode)) {
+		return;
+	}
+
+	if (! lookupsetting(inboundip, "BOOTHOST", boothost)) {
+		return;
+	}
+
+	if (! lookupsetting(inboundip, "BOOTFILE", bootfile)) {
+		return;
+	}
+
+	if (strcmp(bootmode, "tftp") == 0) {
+		strcpy(tftpcmdfilename, "/tmp/tftpcmdfile.XXXXXX");
+
+		fd = mkstemp(tftpcmdfilename);
+
+		if (fd == -1) {
+			return;
+		}
+
+		tftpcmdfile = fdopen(fd, "w");
+
+		if (tftpcmdfile == NULL) {
+			return;
+		}
+
+		fprintf(tftpcmdfile, "connect %s\n", boothost);
+		fprintf(tftpcmdfile, "get %s %s\n", bootfile, configfilename);
+
+		fflush(tftpcmdfile);
+		fflush(tftpcmdfile);
+		fflush(tftpcmdfile);
+		fclose(tftpcmdfile);
+
+		printf("Temp file=[%s]\n", tftpcmdfilename);
+
+		snprintf(systemcmd, MAX_LINE_LENGTH - sizeof(char), "tftp < %s", tftpcmdfilename);
+	
+		printf("systemcmd=[%s]\n", systemcmd);
+
+		system(systemcmd);
+
+		if (stat(configfilename, &stbuf) == -1) {
+			unlink(configfilename);
+			return;
+		}
+
+		if (stbuf.st_size == 0) {
+			unlink(configfilename);
+			return;
+		}
+	}
 
 	return;
 }
